@@ -73,7 +73,7 @@ public class UnsetVariables extends Task implements ExecutionUpdatableTask {
         // so the rendering cache of the properties must be skipped to render with the current execution context
         List<String> renderedVariables = runContext.render(this.variables).asList(String.class);
         boolean renderedIgnoreMissing = runContext.render(this.ignoreMissing).as(Boolean.class).orElseThrow();
-        Map<String, Object> variables = execution.getVariables();
+        Map<String, Object> variables = execution.getVariables() == null ? new HashMap<>() : new HashMap<>(execution.getVariables());
         for (String key : renderedVariables) {
             removeVar(variables, key, renderedIgnoreMissing);
         }

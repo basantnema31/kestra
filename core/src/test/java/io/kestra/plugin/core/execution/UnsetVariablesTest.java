@@ -114,4 +114,57 @@ class UnsetVariablesTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("missingParent");
     }
+
+    @Test
+    void shouldHandleNullExecutionVariablesWhenIgnoreMissingTrue() throws Exception {
+        UnsetVariables task = JacksonMapper.ofJson().readValue(
+            """
+                {
+                  "id": "unset",
+                  "type": "io.kestra.plugin.core.execution.UnsetVariables",
+                  "ignoreMissing": true,
+                  "variables": ["var1", "nested.var2"]
+                }""",
+            UnsetVariables.class
+        );
+
+        Execution executionWithoutVariables = Execution.builder()
+            .id(IdUtils.create())
+            .namespace("io.kestra.unittest")
+            .flowId("unset-variables")
+            .flowRevision(1)
+            .state(new State().withState(State.Type.RUNNING))
+            .variables(null)
+            .build();
+
+        Execution updated = task.update(executionWithoutVariables, runContextFactory.of(Map.of()));
+        assertThat(updated.getVariables()).isEmpty();
+    }
+
+    @Test
+    void shouldFailWhenExecutionVariablesNullAndIgnoreMissingFalse() throws JsonProcessingException {
+        UnsetVariables task = JacksonMapper.ofJson().readValue(
+            """
+                {
+                  "id": "unset",
+                  "type": "io.kestra.plugin.core.execution.UnsetVariables",
+                  "ignoreMissing": false,
+                  "variables": ["var1"]
+                }""",
+            UnsetVariables.class
+        );
+
+        Execution executionWithoutVariables = Execution.builder()
+            .id(IdUtils.create())
+            .namespace("io.kestra.unittest")
+            .flowId("unset-variables")
+            .flowRevision(1)
+            .state(new State().withState(State.Type.RUNNING))
+            .variables(null)
+            .build();
+
+        assertThatThrownBy(() -> task.update(executionWithoutVariables, runContextFactory.of(Map.of())))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("var1");
+    }
 }
